@@ -8,10 +8,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: '3.9'  # Change this if needed
 
@@ -22,7 +22,7 @@ jobs:
         run: pyinstaller --onefile myscript.py
 
       - name: Upload EXE
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: myscript-exe
           path: dist/myscript.exe
