@@ -1,0 +1,28 @@
+name: Build Windows EXE
+
+on: [push]  # Runs when you push code to GitHub
+
+jobs:
+  build:
+    runs-on: windows-latest  # Use a Windows runner
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'  # Change this if needed
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller pandas selenium openpyxl
+
+      - name: Build EXE
+        run: pyinstaller --onefile myscript.py
+
+      - name: Upload EXE
+        uses: actions/upload-artifact@v2
+        with:
+          name: myscript-exe
+          path: dist/myscript.exe
