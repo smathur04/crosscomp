@@ -24,5 +24,5 @@ jobs:
       - name: Upload EXE
         uses: actions/upload-artifact@v4
         with:
-          name: myscript-exe
-          path: dist/myscript.exe
+          name: main-exe
+          path: dist/main.exe
