@@ -1,6 +1,6 @@
 name: Build Windows EXE
 
-on: [push]  # Runs when you push code to GitHub!!!
+on: [push]  # Runs when you push code to GitHub!!!!
 
 jobs:
   build:
