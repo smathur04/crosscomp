@@ -312,8 +312,8 @@ def run_bot(check):
     if len(sim_dict_final.keys()) < 5:
         raise Exception("You need at least 5 sims bro!")
     if check: 
-        sim_check()
         clean_up()
+        sim_check()
         zip_one = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "tmo-input-default-118")))
         zip_one.clear()
         zip_one.send_keys(zip)
