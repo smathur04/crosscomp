@@ -185,6 +185,15 @@ def line(current_row, current_sim, x):
     except:
         search_icon.click()
     time.sleep(4)
+    try:
+        zip_err = WebDriverWait(driver, 1).until(EC.presence_of_element_located((By.XPATH, "//*[starts-with(@id, 'errorMessage')]")))
+        try:
+            driver.execute_script("arguments[0].click();", search_icon)
+        except:
+            search_icon.click()
+        time.sleep(3)
+    except:
+        pass
 
     emergopt = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.XPATH, "//input[@id='tmo-radio-button-opt-in-emergency-0']/parent::span/parent::label")))
     try:
@@ -208,7 +217,7 @@ def line(current_row, current_sim, x):
         streetaddy.click()
     except:
         driver.execute_script("arguments[0].click();", streetaddy)
-    time.sleep(5)
+    time.sleep(4)
     suggest_add = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.XPATH, "//input[@id='tmo-radio-button-form-input-value-3_1']/parent::span/parent::label")))
     try:
         driver.execute_script("arguments[0].click();", suggest_add)
@@ -303,8 +312,8 @@ def run_bot(check):
     if len(sim_dict_final.keys()) < 5:
         raise Exception("You need at least 5 sims bro!")
     if check: 
-        clean_up()
         sim_check()
+        clean_up()
         zip_one = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "tmo-input-default-118")))
         zip_one.clear()
         zip_one.send_keys(zip)
