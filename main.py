@@ -11,6 +11,7 @@ from selenium.common.exceptions import NoSuchWindowException
 
 
 start = input("Hit enter if you would like to skip sim check, otherwise type 'yes' and then click enter: ")
+ask_imei = input("Enter the imei you would like to use, otherwise hit enter to use the default one: ")
 
 
 driver = webdriver.Chrome()
@@ -55,7 +56,10 @@ try:
     zip = driver.find_element(By.ID, "rap-store-city-zip").text[-5:]
     if logins_list[4] == "default": logins_list[4] = zip
     pin = driver.find_element(By.ID, "rap-dealer-code").text
-    imei = 356656426318563
+    if bool(ask_imei):
+        imei = ask_imei
+    else:
+        imei = 356656426318563
     zip_one.clear()
     zip_one.send_keys(zip)
     zip_one.send_keys(Keys.RETURN)
