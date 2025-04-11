@@ -1,6 +1,5 @@
 import os
 import sys
-import time
 import pandas as pd
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -78,28 +77,29 @@ def sim_check():
 
     for row_number, row_sim_dict in sim_dict_final.items():
         for row_sim in row_sim_dict.keys():
-            sim = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "tmo-input-default-76")))
-            sim.clear()
-            sim.send_keys(row_sim)
-            valsim = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "checkSimValidationButton")))
-            try:
-                driver.execute_script("arguments[0].click();", valsim)
-            except:
-                valsim.click()
-            try:
-                error_element = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.ID, "errorMessage0")))
-                error_text = error_element.text
-                sim_dict_final[row_number][row_sim] = error_text
-                df.at[row_number - 1, phone_col] = sim_dict_final[row_number][row_sim]
-                with pd.ExcelWriter(file_path, mode="a", engine="openpyxl", if_sheet_exists="replace") as writer:
-                    df.to_excel(writer, sheet_name=xls.sheet_names[0], index=False)
-            except:
-                go_back = WebDriverWait(driver, 2).until(EC.element_to_be_clickable((By.XPATH, "//h4[contains(text(), 'Enter your T-Mobile SIM card number')]")))
+            if row_sim_dict[row_sim].strip() not in ["", "nan"]: 
+                sim = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "tmo-input-default-76")))
+                sim.clear()
+                sim.send_keys(89049032005008882600122836335988)
+                valsim = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "checkSimValidationButton")))
                 try:
-                    driver.execute_script("arguments[0].click();", go_back)
+                    driver.execute_script("arguments[0].click();", valsim)
                 except:
-                    go_back.click()
-                continue
+                    valsim.click()
+                try:
+                    error_element = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.ID, "errorMessage0")))
+                    error_text = error_element.text
+                    sim_dict_final[row_number][row_sim] = error_text
+                    df.at[row_number - 1, phone_col] = sim_dict_final[row_number][row_sim]
+                    with pd.ExcelWriter(file_path, mode="a", engine="openpyxl", if_sheet_exists="replace") as writer:
+                        df.to_excel(writer, sheet_name=xls.sheet_names[0], index=False)
+                except:
+                    go_back = WebDriverWait(driver, 2).until(EC.element_to_be_clickable((By.XPATH, "//h4[contains(text(), 'Enter your T-Mobile SIM card number')]")))
+                    try:
+                        driver.execute_script("arguments[0].click();", go_back)
+                    except:
+                        go_back.click()
+                    continue
     driver.refresh()    
 
 
@@ -148,7 +148,7 @@ def line(current_row, current_sim, x):
 
     sim = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "tmo-input-default-76")))
     sim.clear()
-    sim.send_keys(current_sim)
+    sim.send_keys(89049032005008882600122836335988)
 
     valsim = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "checkSimValidationButton")))
     try:
@@ -211,8 +211,7 @@ def line(current_row, current_sim, x):
         streetaddy.send_keys(street)
     zip_three = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "line-setup-e911-postalCode-input-0")))
     zip_three.clear()
-    zip_three.send_keys(zip) 
-    streetaddy = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "line-setup-e911-addressLine1-input-0")))
+    zip_three.send_keys(zip)
     try:
         streetaddy.click()
     except:
@@ -310,8 +309,8 @@ def run_bot(check):
     if len(sim_dict_final.keys()) < 5:
         raise Exception("You need at least 5 sims bro!")
     if check: 
-        clean_up()
         sim_check()
+        clean_up()
         zip_one = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "tmo-input-default-118")))
         zip_one.clear()
         zip_one.send_keys(zip)
