@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 import pandas as pd
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -80,7 +81,7 @@ def sim_check():
             if row_sim_dict[row_sim].strip() not in ["", "nan"]: 
                 sim = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "tmo-input-default-76")))
                 sim.clear()
-                sim.send_keys(89049032005008882600122836335988)
+                sim.send_keys(row_sim)
                 valsim = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "checkSimValidationButton")))
                 try:
                     driver.execute_script("arguments[0].click();", valsim)
@@ -212,6 +213,7 @@ def line(current_row, current_sim, x):
     zip_three = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "line-setup-e911-postalCode-input-0")))
     zip_three.clear()
     zip_three.send_keys(zip)
+    time.sleep(1)
     streetaddy.click()
     suggest_add = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.XPATH, "//input[@id='tmo-radio-button-form-input-value-3_1']/parent::span/parent::label")))
     try:
