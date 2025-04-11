@@ -148,7 +148,7 @@ def line(current_row, current_sim, x):
 
     sim = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "tmo-input-default-76")))
     sim.clear()
-    sim.send_keys(89049032005008882600122836335988)
+    sim.send_keys(current_sim)
 
     valsim = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "checkSimValidationButton")))
     try:
