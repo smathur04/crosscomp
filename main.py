@@ -173,7 +173,6 @@ def line(current_row, current_sim, x):
             driver.execute_script("arguments[0].click();", twofi)
         except:
             twofi.click()
-    time.sleep(4)
     confour = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "continueToStepFourButton")))
     try:
         driver.execute_script("arguments[0].click();", confour)
@@ -188,14 +187,12 @@ def line(current_row, current_sim, x):
         driver.execute_script("arguments[0].click();", search_icon)
     except:
         search_icon.click()
-    time.sleep(4)
     try:
         zip_err = WebDriverWait(driver, 1).until(EC.presence_of_element_located((By.XPATH, "//*[starts-with(@id, 'errorMessage')]")))
         try:
             driver.execute_script("arguments[0].click();", search_icon)
         except:
             search_icon.click()
-        time.sleep(3)
     except:
         pass
 
@@ -204,7 +201,6 @@ def line(current_row, current_sim, x):
         driver.execute_script("arguments[0].click();", emergopt)
     except:
         emergopt.click()
-    time.sleep(1)
     try:
         streetaddy = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "line-setup-e911-addressLine1-input-0")))
         streetaddy.clear()
@@ -216,12 +212,10 @@ def line(current_row, current_sim, x):
     zip_three = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "line-setup-e911-postalCode-input-0")))
     zip_three.clear()
     zip_three.send_keys(zip) 
-    time.sleep(1)
     try:
         streetaddy.click()
     except:
         driver.execute_script("arguments[0].click();", streetaddy)
-    time.sleep(4)
     suggest_add = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.XPATH, "//input[@id='tmo-radio-button-form-input-value-3_1']/parent::span/parent::label")))
     try:
         driver.execute_script("arguments[0].click();", suggest_add)
@@ -268,7 +262,6 @@ def checkout():
     pins.send_keys(pin) 
     confpin = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "tmo-input-pin-95")))
     confpin.send_keys(pin) 
-    time.sleep(1)
     pins.click()
 
     wowconttwo = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "backToTop")))
@@ -370,7 +363,6 @@ def run_bot(check):
                     df.to_excel(writer, sheet_name=xls.sheet_names[0], index=False)
             save.update(temp)
             driver.get("https://beta.rap.t-mobile.com/rap/home")
-            time.sleep(2)
             zip_one = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "tmo-input-default-118")))
             zip_one.clear()
             zip_one.send_keys(zip)
