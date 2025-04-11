@@ -212,6 +212,7 @@ def line(current_row, current_sim, x):
     zip_three = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "line-setup-e911-postalCode-input-0")))
     zip_three.clear()
     zip_three.send_keys(zip) 
+    streetaddy = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "line-setup-e911-addressLine1-input-0")))
     try:
         streetaddy.click()
     except:
