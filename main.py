@@ -78,7 +78,7 @@ def sim_check():
 
     for row_number, row_sim_dict in sim_dict_final.items():
         for row_sim in row_sim_dict.keys():
-            if row_sim_dict[row_sim].strip() not in ["", "nan"]: 
+            if row_sim_dict[row_sim].strip() in ["", "nan"]: 
                 sim = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "tmo-input-default-76")))
                 sim.clear()
                 sim.send_keys(row_sim)
