@@ -214,7 +214,10 @@ def line(current_row, current_sim, x):
     zip_three.clear()
     zip_three.send_keys(zip)
     time.sleep(1)
-    streetaddy.click()
+    try:
+        driver.execute_script("arguments[0].click();", streetaddy)
+    except:
+        streetaddy.click()
     suggest_add = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.XPATH, "//input[@id='tmo-radio-button-form-input-value-3_1']/parent::span/parent::label")))
     try:
         driver.execute_script("arguments[0].click();", suggest_add)
