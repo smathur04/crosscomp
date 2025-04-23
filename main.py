@@ -157,23 +157,16 @@ def line(current_row, current_sim, x):
     except:
         valsim.click()
 
-    if x != 21:
-        switch_prepaid = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, f"ui-tabpanel-{x}-label")))
-        try:
-            driver.execute_script("arguments[0].click();", switch_prepaid)
-        except:
-            switch_prepaid.click()
-        ninesev = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.XPATH, "//input[@id='TPP100TTUNLw10XPROMO-4']/parent::span/parent::label")))
-        try:
-            driver.execute_script("arguments[0].click();", ninesev)
-        except:
-            ninesev.click()
-    else: 
-        twofi = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.XPATH, "//input[@id='CbTM25_TTUw8Xc_1mo-2']/parent::span/parent::label")))
-        try:
-            driver.execute_script("arguments[0].click();", twofi)
-        except:
-            twofi.click()
+    switch_prepaid = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, f"ui-tabpanel-{x}-label")))
+    try:
+        driver.execute_script("arguments[0].click();", switch_prepaid)
+    except:
+        switch_prepaid.click()
+    fifty = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.XPATH, "//input[@id='TPP50TTUwULX-0']/parent::span/parent::label")))
+    try:
+        driver.execute_script("arguments[0].click();", fifty)
+    except:
+        fifty.click()
     confour = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "continueToStepFourButton")))
     try:
         driver.execute_script("arguments[0].click();", confour)
