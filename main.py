@@ -234,7 +234,7 @@ def line(current_row, current_sim, x):
     with pd.ExcelWriter(file_path, mode="a", engine="openpyxl", if_sheet_exists="replace") as writer:
         df.to_excel(writer, sheet_name=xls.sheet_names[0], index=False)
 
-    if x != 21:
+    if x != 22:
         nexty = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "navigate-on-continuebtn")))
         try:
             driver.execute_script("arguments[0].click();", nexty)
@@ -331,7 +331,7 @@ def run_bot(check):
                 elif row_number % 5 == 4:
                     line(row_number, row_sim, 17)
                 else:
-                    line(row_number, row_sim, 21)
+                    line(row_number, row_sim, 22)
                     checkout()
         except NoSuchWindowException as e:
             return
