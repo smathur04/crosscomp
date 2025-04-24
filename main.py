@@ -105,7 +105,7 @@ def sim_check():
 
 
 def clean_up():
-    for i in range((len(sim_dict_final.keys())) - (len(sim_dict_final.keys()) % 5) + 1, (len(sim_dict_final.keys())) + 1):
+    for i in range((len(sim_dict_final.keys())) - (len(sim_dict_final.keys()) % 4) + 1, (len(sim_dict_final.keys())) + 1):
         del sim_dict_final[i]
 
     have_to_go = set()
@@ -115,22 +115,20 @@ def clean_up():
         row_phone = sim_dict_final[row_number].values()
         row_phone = list(row_phone)[0]
         if row_phone.strip() not in ["", "nan"] :
-            if row_number > 5:
-                base = ((row_number - 1) // 5) * 5 + 1
+            if row_number > 4:
+                base = ((row_number - 1) // 4) * 4 + 1
                 have_to_go.add(base)
                 have_to_go.add(base + 1)
                 have_to_go.add(base + 2)
                 have_to_go.add(base + 3)
-                have_to_go.add(base + 4)
-                row_number = base + 5
+                row_number = base + 4
             else:
-                base = 5
+                base = 4
                 have_to_go.add(base)
                 have_to_go.add(base - 1)
                 have_to_go.add(base - 2)
                 have_to_go.add(base - 3)
-                have_to_go.add(base - 4)
-                row_number = 6
+                row_number = 5
         else:
             row_number += 1
 
@@ -162,11 +160,11 @@ def line(current_row, current_sim, x):
         driver.execute_script("arguments[0].click();", switch_prepaid)
     except:
         switch_prepaid.click()
-    fifty = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.XPATH, "//input[@id='TPP50TTUwULX-0']/parent::span/parent::label")))
+    ninesev = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.XPATH, "//input[@id='TPP100TTUNLw10XPROMO-4']/parent::span/parent::label")))
     try:
-        driver.execute_script("arguments[0].click();", fifty)
+        driver.execute_script("arguments[0].click();", ninesev)
     except:
-        fifty.click()
+        ninesev.click()
     confour = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "continueToStepFourButton")))
     try:
         driver.execute_script("arguments[0].click();", confour)
@@ -234,7 +232,7 @@ def line(current_row, current_sim, x):
     with pd.ExcelWriter(file_path, mode="a", engine="openpyxl", if_sheet_exists="replace") as writer:
         df.to_excel(writer, sheet_name=xls.sheet_names[0], index=False)
 
-    if x != 22:
+    if x != 17:
         nexty = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "navigate-on-continuebtn")))
         try:
             driver.execute_script("arguments[0].click();", nexty)
@@ -301,8 +299,8 @@ def checkout():
 
 
 def run_bot(check):
-    if len(sim_dict_final.keys()) < 5:
-        raise Exception("You need at least 5 sims bro!")
+    if len(sim_dict_final.keys()) < 4:
+        raise Exception("You need at least 4 sims bro!")
     if check: 
         sim_check()
         clean_up()
@@ -322,36 +320,32 @@ def run_bot(check):
                 global email
                 email = f"s{row_sim[-7:]}@gmail.com"
                 cut_off = row_number
-                if row_number % 5 == 1:
+                if row_number % 4 == 1:
                     line(row_number, row_sim, 1)
-                elif row_number % 5 == 2:
+                elif row_number % 4 == 2:
                     line(row_number, row_sim, 7)
-                elif row_number % 5 == 3:
+                elif row_number % 4 == 3:
                     line(row_number, row_sim, 12)
-                elif row_number % 5 == 4:
-                    line(row_number, row_sim, 17)
                 else:
-                    line(row_number, row_sim, 22)
+                    line(row_number, row_sim, 17)
                     checkout()
         except NoSuchWindowException as e:
             return
         except Exception as e:
             print(f"Something went wrong when doing SIM:{sim_dict_final[cut_off]}. Here is the error the program produced \n {e}")
             temp = set()
-            if cut_off > 5:
-                base = ((row_number - 1) // 5) * 5 + 1
+            if cut_off > 4:
+                base = ((row_number - 1) // 4) * 4 + 1
                 temp.add(base)
                 temp.add(base + 1)
                 temp.add(base + 2)
                 temp.add(base + 3)
-                temp.add(base + 4)
             else:
-                base = 5
+                base = 4
                 temp.add(base)
                 temp.add(base - 1)
                 temp.add(base - 2)
                 temp.add(base - 3)
-                temp.add(base - 4)
             for j in temp:
                 df.at[j - 1, phone_col] = "*MANUAL CHECK NEEDED*" + str(df.at[j - 1, phone_col])
                 with pd.ExcelWriter(file_path, mode="a", engine="openpyxl", if_sheet_exists="replace") as writer:
@@ -365,11 +359,11 @@ def run_bot(check):
             continue
     print("ADDING EMAILS TO EXCEL...")
     df["EMAIL"] = ""
-    for i in range(0, len(df), 5):
-        if i + 4 < len(df):
-            last_7 = df.at[i + 4, sim_col][-7:]  
+    for i in range(0, len(df), 4):
+        if i + 3 < len(df):
+            last_7 = df.at[i + 3, sim_col][-7:]  
             epic_email = f"s{last_7}@gmail.com"
-            df.loc[i:i+4, "EMAIL"] = [epic_email] + [""] * 4 
+            df.loc[i:i+3, "EMAIL"] = [epic_email] + [""] * 3 
     with pd.ExcelWriter(file_path, mode="a", engine="openpyxl", if_sheet_exists="replace") as writer:
         df.to_excel(writer, sheet_name=xls.sheet_names[0], index=False)
     print("BOT DONE!")
