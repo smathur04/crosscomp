@@ -16,7 +16,7 @@ jobs:
           python-version: '3.9'  # Change this if needed
 
       - name: Install PyInstaller
-        run: pip install selenium undetected-chromedriver chromedriver-autoinstaller openpyxl Pillow
+        run: pip install pyinstaller selenium undetected-chromedriver chromedriver-autoinstaller openpyxl Pillow
 
       - name: Build EXE
         run: pyinstaller --onefile main.py
