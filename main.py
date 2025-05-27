@@ -1,372 +1,222 @@
 import os
 import sys
+import io
 import time
-import pandas as pd
-from selenium import webdriver
+import base64
+import random
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchWindowException
+from selenium.webdriver.chrome.service import Service
+import undetected_chromedriver as uc
+import chromedriver_autoinstaller
+from openpyxl import load_workbook
+from openpyxl.drawing.image import Image as XLImage
+from PIL import Image
 
+ask_how_many = input("Please enter the number of lines you would like to do and then hit enter: ")
+ask_load = input("Please enter the amount you would like to load in the ##.## format and then hit enter: ")
+first_names = ["Peter", "John", "Alice", "Liam", "Maya", "Derek", "Tina", "Zane"]
+last_names = ["Mcnally", "Smith", "Johnson", "Patel", "Lee", "Garcia", "Nguyen", "Kim"]
 
-start = input("Hit enter if you would like to skip sim check, otherwise type 'yes' and then click enter: ")
-ask_imei = input("Enter the imei you would like to use, otherwise hit enter to use the default one: ")
+chromedriver_path = chromedriver_autoinstaller.install()
+options = uc.ChromeOptions()
+options.add_argument("--disable-blink-features=AutomationControlled")
+options.add_argument("user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36")
+driver = uc.Chrome(service=Service(chromedriver_path), options=options)
 
-
-driver = webdriver.Chrome()
-driver.get("https://beta.rap.t-mobile.com/rap/home")
-
-
-try:
-    script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-    os.chdir(script_dir) 
-    file_path = [f for f in os.listdir() if f.endswith(".xlsx")][0]
-    xls = pd.ExcelFile(file_path)
-    df = xls.parse(sheet_name=xls.sheet_names[1], header=None)
-    logins_list = df.iloc[0:5, 0].tolist()
-    if len(logins_list) == 4:
-        logins_list.append("default")
-    elif len(logins_list) == 5 and str(logins_list[4]).strip() == "":
-        logins_list[4] = "default"
-    df = xls.parse(sheet_name=xls.sheet_names[0])
-    df = df.astype(str)
-    sim_col = next(col for col in df.columns if "sim" in col.lower())
-    phone_col = next(col for col in df.columns if "phone" in col.lower())
-    sim_dict = {sim: "" if pd.isna(df.at[i, phone_col]) or df.at[i, phone_col] == "" else df.at[i, phone_col] for i, sim in df[sim_col].items()}
-    sim_dict_final = {index + 1: {key: value} for index, (key, value) in enumerate(sim_dict.items())}
-except Exception as e:
-    raise Exception(f"There is something wrong with your excel here is the error the program produced \n {e}")
-
-
-try:
-    email_input = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "i0116")))
-    email_input.send_keys(logins_list[0])
-    email_input.send_keys(Keys.RETURN)
-    pass_input = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "i0118")))
-    pass_input.send_keys(logins_list[1])
-    pass_input.send_keys(Keys.RETURN)
-except Exception as e:
-    raise Exception(f"There is something wrong with your tmobile login here is the error the program produced \n {e}")
-
-
-try:
-    zip_one = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "tmo-input-default-118")))
-    street = driver.find_element(By.ID, "rap-store-street").text
-    zip = driver.find_element(By.ID, "rap-store-city-zip").text[-5:]
-    if logins_list[4] == "default": logins_list[4] = zip
-    pin = driver.find_element(By.ID, "rap-dealer-code").text
-    if bool(ask_imei):
-        imei = ask_imei
-    else:
-        imei = 356656426318563
-    zip_one.clear()
-    zip_one.send_keys(zip)
-    zip_one.send_keys(Keys.RETURN)
-except Exception as e:
-    raise Exception(f"There is something wrong at the start here is the error the program produced \n {e}")
-
-
-def sim_check():
-    imei_send = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, f"tmo-input-default-74")))
-    imei_send.send_keys(imei)
-    check_compat = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "checkCompatibility")))
+wait = WebDriverWait(driver, 120)
+def safe_click(element):
     try:
-        driver.execute_script("arguments[0].click();", check_compat)
+        element.click()
     except:
-        check_compat.click()
+        driver.execute_script("arguments[0].click();", element)
 
-    for row_number, row_sim_dict in sim_dict_final.items():
-        for row_sim in row_sim_dict.keys():
-            if row_sim_dict[row_sim].strip() in ["", "nan"]: 
-                sim = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "tmo-input-default-76")))
-                sim.clear()
-                sim.send_keys(row_sim)
-                valsim = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "checkSimValidationButton")))
-                try:
-                    driver.execute_script("arguments[0].click();", valsim)
-                except:
-                    valsim.click()
-                try:
-                    error_element = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.ID, "errorMessage0")))
-                    error_text = error_element.text
-                    sim_dict_final[row_number][row_sim] = error_text
-                    df.at[row_number - 1, phone_col] = sim_dict_final[row_number][row_sim]
-                    with pd.ExcelWriter(file_path, mode="a", engine="openpyxl", if_sheet_exists="replace") as writer:
-                        df.to_excel(writer, sheet_name=xls.sheet_names[0], index=False)
-                except:
-                    go_back = WebDriverWait(driver, 2).until(EC.element_to_be_clickable((By.XPATH, "//h4[contains(text(), 'Enter your T-Mobile SIM card number')]")))
-                    try:
-                        driver.execute_script("arguments[0].click();", go_back)
-                    except:
-                        go_back.click()
-                    continue
-    driver.refresh()    
+driver.get("https://web-retailer-portal.ultramobile.com")
 
+portal_username = wait.until(EC.element_to_be_clickable((By.NAME, "username")))
+portal_username.send_keys("uwe16913")
 
-def clean_up():
-    for i in range((len(sim_dict_final.keys())) - (len(sim_dict_final.keys()) % 4) + 1, (len(sim_dict_final.keys())) + 1):
-        del sim_dict_final[i]
+portal_pass = wait.until(EC.element_to_be_clickable((By.NAME, "password")))
+portal_pass.send_keys("Florin2316$")
 
-    have_to_go = set()
+portal_sign_in = wait.until(EC.element_to_be_clickable((By.ID, "submit")))
+safe_click(portal_sign_in)
 
-    row_number = 1
-    while row_number <= len(sim_dict_final):
-        row_phone = sim_dict_final[row_number].values()
-        row_phone = list(row_phone)[0]
-        if row_phone.strip() not in ["", "nan"] :
-            if row_number > 4:
-                base = ((row_number - 1) // 4) * 4 + 1
-                have_to_go.add(base)
-                have_to_go.add(base + 1)
-                have_to_go.add(base + 2)
-                have_to_go.add(base + 3)
-                row_number = base + 4
-            else:
-                base = 4
-                have_to_go.add(base)
-                have_to_go.add(base - 1)
-                have_to_go.add(base - 2)
-                have_to_go.add(base - 3)
-                row_number = 5
-        else:
-            row_number += 1
+goto_activations = wait.until(EC.element_to_be_clickable((By.ID, "activation")))
+safe_click(goto_activations)
 
-    for j in have_to_go:
-        del sim_dict_final[j]
+for i in range(1, int(ask_how_many) + 1):
+    esim_tab = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[@class='item' and text()='eSIM']")))
+    safe_click(esim_tab)
 
+    continue_one = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()='Continue']")))
+    safe_click(continue_one)
 
-def line(current_row, current_sim, x):
-    imei_send = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, f"tmo-input-default-74")))
-    imei_send.send_keys(imei)
-    check_compat = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "checkCompatibility")))
+    brand_dropdown = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[@role='listbox' and .//div[text()='Select a Brand']]")))
+    safe_click(brand_dropdown)
+    apple = wait.until(EC.element_to_be_clickable((By.XPATH, ".//div[@role='option']//span[text()='Apple']")))
+    safe_click(apple)
+
+    model_dropdown = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[@role='listbox' and .//div[text()='Select a Model']]")))
+    safe_click(model_dropdown)
+    eleven = wait.until(EC.element_to_be_clickable((By.XPATH, ".//div[@role='option']//span[text()='iPhone 11']")))
+    safe_click(eleven)
+
+    continue_two = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()='Continue']")))
+    safe_click(continue_two)
+
+    continue_three = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[text()='Continue']")))
+    safe_click(continue_three)
+
+    zip = wait.until(EC.element_to_be_clickable((By.ID, "activation-zipinput")))
+    zip.send_keys("94568")
+
+    plan = wait.until(EC.element_to_be_clickable((By.ID, "activation-133mo")))
+    safe_click(plan)
+
+    activate = wait.until(EC.element_to_be_clickable((By.ID, "activate-submit")))
+    safe_click(activate)
+
+    first = random.choice(first_names)
+    last = random.choice(last_names)
+
+    firstname = wait.until(EC.element_to_be_clickable((By.ID, "activationfirstnameinput")))
+    firstname.send_keys(first)
+    lastname = wait.until(EC.element_to_be_clickable((By.ID, "activationlastnameinput")))
+    lastname.send_keys(last)
+    email = wait.until(EC.element_to_be_clickable((By.ID, "activationemailinput")))
+    email.send_keys(f"{first}{last}@gmail.com")
+    continue_four = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()='Continue']")))
+    safe_click(continue_four)
+
+    epay = wait.until(EC.element_to_be_clickable((By.ID, "selectepay")))
+    safe_click(epay)
+
+    launch = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()='Launch ePay']")))
+    safe_click(launch)
+
+    iframe = wait.until(EC.presence_of_element_located((By.XPATH, "//iframe[contains(@title, 'Embedded Payment Form')]")))
+    driver.switch_to.frame(iframe)
+    epay_email = wait.until(EC.element_to_be_clickable((By.ID, "inputEmail")))
+    epay_email.send_keys("80646933") 
+    epay_pass = wait.until(EC.element_to_be_clickable((By.ID, "inputPassword")))
+    epay_pass.send_keys("MIke072980$") 
+    epay_sign_in = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@type='submit']")))
+    safe_click(epay_sign_in)
+    subtrans = wait.until(EC.element_to_be_clickable((By.ID, "submitTransaction")))
+    safe_click(subtrans)
+    transdone = wait.until(EC.element_to_be_clickable((By.ID, "transactionDone")))
+    safe_click(transdone)
+    driver.switch_to.default_content()
+
+    phone_number_element = wait.until(EC.presence_of_element_located((By.ID, "activation-completenumber")))
+    phone_number = phone_number_element.text
+    print(phone_number)
+
+    twintowahs = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(text(), '911')]")))
+    safe_click(twintowahs) 
+
+    enabled = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()='Enabled']")))
+    safe_click(enabled)
+
+    streetaddy1 = wait.until(EC.element_to_be_clickable((By.NAME, "street1")))
+    streetaddy1.send_keys("2400 FLORIN ROAD")
+    streetaddy2 = wait.until(EC.element_to_be_clickable((By.NAME, "street2")))
+    streetaddy2.send_keys("2400 FLORIN ROAD")
+    city = wait.until(EC.element_to_be_clickable((By.NAME, "city")))
+    city.send_keys("SACRAMENTO")
+    statedrop = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[@name='state']")))
+    safe_click(statedrop)
+    california_option = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[@role='option']//span[text()='CALIFORNIA']")))
+    safe_click(california_option)
+    zip2 = wait.until(EC.element_to_be_clickable((By.NAME, "zip")))
+    zip2.send_keys("95822")
+
+    checky = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(text(), 'WiFi for 911 service')]")))
+    safe_click(checky)
+
+    update = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()='Update Settings']")))
+    safe_click(update)
+
+    rtsa = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(text(), 'Return to Subscriber Actions')]")))
+    safe_click(rtsa)
+
+    load = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(text(), 'Load Wallet')]")))
+    safe_click(load)
+
+    epay2 = wait.until(EC.element_to_be_clickable((By.ID, "selectepay")))
+    safe_click(epay2)
+
+    rich = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), '$10.01 - $100.00')]")))
+    safe_click(rich)
+
+    iframe2 = wait.until(EC.presence_of_element_located((By.XPATH, "//iframe[contains(@title, 'Embedded Payment Form')]")))
+    driver.switch_to.frame(iframe2)
+    epay_email2 = wait.until(EC.element_to_be_clickable((By.ID, "inputEmail")))
+    epay_email2.send_keys("80646933") 
+    epay_pass2 = wait.until(EC.element_to_be_clickable((By.ID, "inputPassword")))
+    epay_pass2.send_keys("MIke072980$") 
+    epay_sign_in2 = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@type='submit']")))
+    safe_click(epay_sign_in2)
+    price_input2 = wait.until(
+        EC.element_to_be_clickable((By.XPATH, "//input[@jq-mask='decimal-us']"))
+    )
+    price_input2.clear()
+    price_input2.send_keys(ask_load)
+    complete_transaction = wait.until(EC.element_to_be_clickable(
+        (By.XPATH, "//a[contains(., 'Complete transaction')]")
+    ))
+    safe_click(complete_transaction)
+    subtrans2 = wait.until(EC.element_to_be_clickable((By.ID, "submitTransaction")))
+    safe_click(subtrans2)
+    transdone2 = wait.until(EC.element_to_be_clickable((By.ID, "transactionDone")))
+    safe_click(transdone2)
+    driver.switch_to.default_content()
+
+    rtsa2 = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(text(), 'Return to Subscriber Actions')]")))
+    safe_click(rtsa2)
+    
+    goqr = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(text(), 'eSIM')]")))
+    safe_click(goqr)
+
+    continue_one2 = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()='Continue']")))
+    safe_click(continue_one2)
+    
     try:
-        driver.execute_script("arguments[0].click();", check_compat)
-    except:
-        check_compat.click()
+        canvas = wait.until(EC.presence_of_element_located((By.TAG_NAME, "canvas")))
+        qr_data = driver.execute_script("""
+            var canvas = arguments[0];
+            return canvas.toDataURL("image/png").substring(22);
+        """, canvas)
+        qr_img = Image.open(io.BytesIO(base64.b64decode(qr_data)))
+        qr_path = f"qr{phone_number}.png"
+        qr_img.save(qr_path)
+    except Exception as e:
+        print(f"Failed to save QR image #{i}: {e}")
 
-    sim = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "tmo-input-default-76")))
-    sim.clear()
-    sim.send_keys(current_sim)
-
-    valsim = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "checkSimValidationButton")))
     try:
-        driver.execute_script("arguments[0].click();", valsim)
-    except:
-        valsim.click()
+        script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+        os.chdir(script_dir) 
+        file_name = [f for f in os.listdir() if f.endswith(".xlsx")][0]
+        wb = load_workbook(file_name)
+        ws = wb["Sheet1"]
+        next_row = 1
+        while ws.cell(row=next_row, column=1).value:
+            next_row += 1
+        ws.cell(row=next_row, column=1).value = phone_number
 
-    switch_prepaid = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, f"ui-tabpanel-{x}-label")))
-    try:
-        driver.execute_script("arguments[0].click();", switch_prepaid)
-    except:
-        switch_prepaid.click()
-    ninesev = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.XPATH, "//input[@id='TPP100TTUNLw10XPROMO-4']/parent::span/parent::label")))
-    try:
-        driver.execute_script("arguments[0].click();", ninesev)
-    except:
-        ninesev.click()
-    confour = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "continueToStepFourButton")))
-    try:
-        driver.execute_script("arguments[0].click();", confour)
-    except:
-        confour.click()
+        if os.path.exists(qr_path):
+            img = XLImage(qr_path)
+            img.width, img.height = 140, 140
+            ws.add_image(img, "B" + str(next_row))
+           
+        ws.row_dimensions[next_row].height = 130
+        ws.column_dimensions["A"].width = 25
+        ws.column_dimensions["B"].width = 25
 
-    zip_two = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "cta-default-116")))
-    zip_two.clear()
-    zip_two.send_keys(logins_list[4])
-    search_icon = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.XPATH, "//a[@class='hover-magenta search-icon']")))
-    try:
-        driver.execute_script("arguments[0].click();", search_icon)
-    except:
-        search_icon.click()
-    try:
-        zip_err = WebDriverWait(driver, 1).until(EC.presence_of_element_located((By.XPATH, "//*[starts-with(@id, 'errorMessage')]")))
-        try:
-            driver.execute_script("arguments[0].click();", search_icon)
-        except:
-            search_icon.click()
-    except:
-        pass
+        wb.save(file_name)
+    except Exception as e:
+        print(f"Failed to write to Excel on line {i}: {e}")
 
-    emergopt = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.XPATH, "//input[@id='tmo-radio-button-opt-in-emergency-0']/parent::span/parent::label")))
-    try:
-        driver.execute_script("arguments[0].click();", emergopt)
-    except:
-        emergopt.click()
-    try:
-        streetaddy = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "line-setup-e911-addressLine1-input-0")))
-        streetaddy.clear()
-        streetaddy.send_keys(street)
-    except:
-        streetaddy = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "line-setup-e911-addressLine1-input-0")))
-        streetaddy.clear()
-        streetaddy.send_keys(street)
-    zip_three = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "line-setup-e911-postalCode-input-0")))
-    zip_three.clear()
-    zip_three.send_keys(zip)
-    time.sleep(1)
-    try:
-        streetaddy.click()
-    except:
-        driver.execute_script("arguments[0].click();", streetaddy)
-    suggest_add = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.XPATH, "//input[@id='tmo-radio-button-form-input-value-3_1']/parent::span/parent::label")))
-    try:
-        driver.execute_script("arguments[0].click();", suggest_add)
-    except:
-        suggest_add.click()
-    add_continue = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "address-validator-select-button")))
-    try:
-        driver.execute_script("arguments[0].click();", add_continue)
-    except:
-        add_continue.click()
-    complete_line_setup = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "button-on-complete-line-setup")))
-    try:
-        driver.execute_script("arguments[0].click();", complete_line_setup)
-    except:
-        complete_line_setup.click()
-
-    phone = driver.find_element(By.XPATH, "//p[contains(text(), 'Phone number: ')]")
-    sim_dict_final[current_row][current_sim] = phone.text.replace("Phone number: ", "").strip()
-    print(sim_dict_final[current_row][current_sim])
-    df.at[current_row - 1, phone_col] = sim_dict_final[current_row][current_sim]
-    with pd.ExcelWriter(file_path, mode="a", engine="openpyxl", if_sheet_exists="replace") as writer:
-        df.to_excel(writer, sheet_name=xls.sheet_names[0], index=False)
-
-    if x != 17:
-        nexty = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "navigate-on-continuebtn")))
-        try:
-            driver.execute_script("arguments[0].click();", nexty)
-        except:
-            nexty.click()
-
-
-def checkout():
-    wowcont = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "button-on-continue")))
-    try:
-        driver.execute_script("arguments[0].click();", wowcont)
-    except:
-        wowcont.click()
-
-    emails = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "tmo-input-default-92")))
-    emails.send_keys(email) 
-    confemail = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "tmo-input-default-93")))
-    confemail.send_keys(email) 
-    pins = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "tmo-input-pin-94")))
-    pins.send_keys(pin) 
-    confpin = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "tmo-input-pin-95")))
-    confpin.send_keys(pin) 
-    pins.click()
-
-    wowconttwo = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "backToTop")))
-    try:
-        driver.execute_script("arguments[0].click();", wowconttwo)
-    except:
-        wowconttwo.click()
-
-    epay_email = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "inputEmail")))
-    epay_email.send_keys(logins_list[2]) 
-    epay_pass = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "inputPassword")))
-    epay_pass.send_keys(logins_list[3]) 
-
-    sign_in_button = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.XPATH, "//button[span[normalize-space(text())='Sign In']]")))
-    try:
-        driver.execute_script("arguments[0].click();", sign_in_button)
-    except:
-        sign_in_button.click()
-
-    wowcontthree = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "submitTransaction")))
-    try:
-        driver.execute_script("arguments[0].click();", wowcontthree)
-    except:
-        wowcontthree.click()
-
-    wowcontfour = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "transactionDone")))
-    try:
-        driver.execute_script("arguments[0].click();", wowcontfour)
-    except:
-        wowcontfour.click()
-
-    tostart = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "go-to-account-button")))
-    try:
-        driver.execute_script("arguments[0].click();", tostart)
-    except:
-        tostart.click()
-
-    zip_one = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "tmo-input-default-118")))
-    zip_one.clear()
-    zip_one.send_keys(zip)
-    zip_one.send_keys(Keys.RETURN)
-
-
-def run_bot(check):
-    if len(sim_dict_final.keys()) < 4:
-        raise Exception("You need at least 4 sims bro!")
-    if check: 
-        sim_check()
-        clean_up()
-        zip_one = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "tmo-input-default-118")))
-        zip_one.clear()
-        zip_one.send_keys(zip)
-        zip_one.send_keys(Keys.RETURN)
-    else:
-        clean_up()
-    cut_off = 1
-    save = set()
-    for row_number, row_sim_dict in sim_dict_final.items():
-        try:
-            for row_sim in row_sim_dict.keys():
-                if row_number in save:
-                    continue
-                global email
-                email = f"s{row_sim[-7:]}@gmail.com"
-                cut_off = row_number
-                if row_number % 4 == 1:
-                    line(row_number, row_sim, 1)
-                elif row_number % 4 == 2:
-                    line(row_number, row_sim, 7)
-                elif row_number % 4 == 3:
-                    line(row_number, row_sim, 12)
-                else:
-                    line(row_number, row_sim, 17)
-                    checkout()
-        except NoSuchWindowException as e:
-            return
-        except Exception as e:
-            print(f"Something went wrong when doing SIM:{sim_dict_final[cut_off]}. Here is the error the program produced \n {e}")
-            temp = set()
-            if cut_off > 4:
-                base = ((row_number - 1) // 4) * 4 + 1
-                temp.add(base)
-                temp.add(base + 1)
-                temp.add(base + 2)
-                temp.add(base + 3)
-            else:
-                base = 4
-                temp.add(base)
-                temp.add(base - 1)
-                temp.add(base - 2)
-                temp.add(base - 3)
-            for j in temp:
-                df.at[j - 1, phone_col] = "*MANUAL CHECK NEEDED*" + str(df.at[j - 1, phone_col])
-                with pd.ExcelWriter(file_path, mode="a", engine="openpyxl", if_sheet_exists="replace") as writer:
-                    df.to_excel(writer, sheet_name=xls.sheet_names[0], index=False)
-            save.update(temp)
-            driver.get("https://beta.rap.t-mobile.com/rap/home")
-            zip_one = WebDriverWait(driver, 100).until(EC.element_to_be_clickable((By.ID, "tmo-input-default-118")))
-            zip_one.clear()
-            zip_one.send_keys(zip)
-            zip_one.send_keys(Keys.RETURN) 
-            continue
-    print("ADDING EMAILS TO EXCEL...")
-    df["EMAIL"] = ""
-    for i in range(0, len(df), 4):
-        if i + 3 < len(df):
-            last_7 = df.at[i + 3, sim_col][-7:]  
-            epic_email = f"s{last_7}@gmail.com"
-            df.loc[i:i+3, "EMAIL"] = [epic_email] + [""] * 3 
-    with pd.ExcelWriter(file_path, mode="a", engine="openpyxl", if_sheet_exists="replace") as writer:
-        df.to_excel(writer, sheet_name=xls.sheet_names[0], index=False)
-    print("BOT DONE!")
-
-
-run_bot(check = bool(start))
+    driver.get("https://web-retailer-portal.ultramobile.com/portal/activation/")
